@@ -84,25 +84,93 @@ void sm_send_event(Event event){
 
 void sm_execute(){
 
+
     switch (Vending_machine.current_state)
     {
     case START:
-        // Não faz nada
+        if(Vending_machine.last_event == COIN_1_EUR ||  Vending_machine.last_event == COIN_2_EUR || Vending_machine.last_event == COIN_5_EUR || Vending_machine.last_event == COIN_10_EUR){
+			Vending_machine.current_state = INSERT_COIN;
+		}
+		else if(Vending_machine.last_event == BROWSE_UP || Vending_machine.last_event == BROWSE_DOWN){
+			Vending_machine.current_state = BROWSE;
+		}
         break;
     case INSERT_COIN:
-		printk("credito = %d\r",credit);
+		if(Vending_machine.last_event == COIN_1_EUR){
+			credit += 1;
+			Vending_machine.last_event = NO_EVENT;
+		}
+		else if(Vending_machine.last_event == COIN_2_EUR){
+			credit += 2;
+			Vending_machine.last_event = NO_EVENT;
+		}
+		else if(Vending_machine.last_event == COIN_5_EUR){
+			credit += 5;
+			Vending_machine.last_event = NO_EVENT;
+		}
+		else if(Vending_machine.last_event == COIN_10_EUR){
+			credit += 10;
+			Vending_machine.last_event = NO_EVENT;
+		}
+		else if(Vending_machine.last_event == BROWSE_UP || Vending_machine.last_event == BROWSE_DOWN ){
+			Vending_machine.current_state = BROWSE;
+		}
+		else if(Vending_machine.last_event == RETURN){
+			printk( "%d EUR return                                                                                 \n",credit);
+			credit = 0;
+			Vending_machine.last_event = NO_EVENT;
+		}
+		printk("credito = %d                                                                                     \r",credit);
+		
         break;
     case BROWSE:
-		if(up_down == -1){
-			printk("Nome: %s , horario: %s e preco: %d\r",movies[4].name,movies[4].time, movies[4].price );
-		}
-		else{
-			printk("Nome: %s , horario: %s e preco: %d\r",movies[up_down%5].name,movies[up_down%5].time, movies[up_down%5].price );
-		}
-         
+			if(Vending_machine.last_event == BROWSE_UP){
+				up_down++;
+				if(up_down == 5){
+					up_down = 0;
+					printk("Name: %s , schedule: %s price: %d , available credit: %d           \r",movies[up_down].name,movies[up_down].time, movies[up_down].price ,credit);
+				}
+				else{
+					printk("Name: %s , schedule: %s price: %d , available credit: %d             \r",movies[up_down].name,movies[up_down].time, movies[up_down].price ,credit);
+				}
+				Vending_machine.last_event = NO_EVENT;
+			}
+			if(Vending_machine.last_event == BROWSE_DOWN){
+				up_down--;
+				if(up_down == -1){
+					up_down = 4;
+					printk("Name: %s , schedule: %s price: %d , available credit: %d              \r",movies[up_down].name,movies[up_down].time, movies[up_down].price ,credit);
+				}
+				else{
+					printk("Name: %s , schedule: %s price: %d , available credit: %d                \r",movies[up_down].name,movies[up_down].time, movies[up_down].price ,credit);
+				}
+				Vending_machine.last_event = NO_EVENT;
+			}
+
+			else if(Vending_machine.last_event == RETURN){
+				printk( "%d EUR return                                                                                       \n",credit);
+				credit = 0;
+				printk("Name: %s , schedule: %s price: %d , available credit: %d                                        \r",movies[up_down].name,movies[up_down].time, movies[up_down].price ,credit);
+				Vending_machine.last_event = NO_EVENT;
+			}
+
+			else if(Vending_machine.last_event == SELECT){
+				if(credit >= movies[up_down].price){
+					credit -= movies[up_down].price;
+					printk("Ticket for %s, session %s issued. Remaining credit: %d                                         \r",movies[up_down].name,movies[up_down].time,credit);
+					Vending_machine.last_event = NO_EVENT;
+				}
+				else if(credit < movies[up_down].price){
+				printk("Not enough credit. Ticket not issued                                                                   \r");
+				Vending_machine.last_event = NO_EVENT;
+
+				}
+			}
+				else if(Vending_machine.last_event == COIN_1_EUR ||  Vending_machine.last_event == COIN_2_EUR || Vending_machine.last_event == COIN_5_EUR || Vending_machine.last_event == COIN_10_EUR){
+				Vending_machine.current_state = INSERT_COIN;
+				}
 
         break;
-
 
     default:
         break;
@@ -133,55 +201,42 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 	/* Identify the button(s) that was(ere) hit*/
 	for(i=0; i<sizeof(buttons_pins); i++){		
 		if(BIT(buttons_pins[i]) & pins) {
-			//printk("Button %d pressed\n\r",i+1);
+			//printk("Button %d pressed\n",i+1);
 			val = i+1;
 			}
-		}
+		} // mudar é o evento desta desta função
 		 	switch(val){
 				case 1:
 					Vending_machine.last_event = COIN_1_EUR;
-					Vending_machine.current_state = INSERT_COIN;
-					credit += 1;
 					break;
 					
 
 				case 2:
 					Vending_machine.last_event = COIN_2_EUR;
-					Vending_machine.current_state = INSERT_COIN;
-					credit += 2;
 					break;
 
 				case 3:
 					Vending_machine.last_event = COIN_5_EUR;
-					Vending_machine.current_state = INSERT_COIN;
-					credit += 5;
 					break;
 
 				case 4:
 					Vending_machine.last_event = COIN_10_EUR;
-					Vending_machine.current_state = INSERT_COIN;
-					credit += 10;
 					break; 
 				 case 5:
 					Vending_machine.last_event = BROWSE_UP;
-					Vending_machine.current_state = BROWSE;
-					up_down += 1;
 					break;
 
 				case 6:
 					Vending_machine.last_event = BROWSE_DOWN;
-					Vending_machine.current_state = BROWSE;
-					up_down -= 1;
 					break;
-				/* case 7:
+				 case 7:
 					Vending_machine.last_event = SELECT;
-					Vending_machine.current_state = SELECT_MOVIE;
 					break;
+					
 
 				case 8:
 					Vending_machine.last_event = RETURN;
-					Vending_machine.current_state = RETURN_CREDIT;
-					break;   */
+					break;   
 			
 	}
 
@@ -190,9 +245,6 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 
 
 int main(){
-	// código de debug
-	gpio_pin_configure(gpio0_dev, 31, GPIO_OUTPUT_LOW);
-	//////////////////////////////////////////////////////////////
 	
 	int ret;
 	uint32_t pinmask = 0;

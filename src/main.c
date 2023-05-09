@@ -30,6 +30,7 @@ typedef struct  {
 // define the current credit of the system
 int credit = 0;
 int up_down;
+int flag_movie = 0;
 
 // define the states of the state machine
 typedef enum {
@@ -92,6 +93,7 @@ void sm_execute(){
 			Vending_machine.current_state = INSERT_COIN;
 		}
 		else if(Vending_machine.last_event == BROWSE_UP || Vending_machine.last_event == BROWSE_DOWN){
+			flag_movie = 1;
 			Vending_machine.current_state = BROWSE;
 		}
         break;
@@ -112,37 +114,52 @@ void sm_execute(){
 			credit += 10;
 			Vending_machine.last_event = NO_EVENT;
 		}
-		else if(Vending_machine.last_event == BROWSE_UP || Vending_machine.last_event == BROWSE_DOWN ){
-			Vending_machine.current_state = BROWSE;
-		}
 		else if(Vending_machine.last_event == RETURN){
 			printk( "%d EUR return                                                                                 \n",credit);
 			credit = 0;
 			Vending_machine.last_event = NO_EVENT;
 		}
+		else if(Vending_machine.last_event == BROWSE_UP || Vending_machine.last_event == BROWSE_DOWN ){
+			flag_movie = 1;
+			Vending_machine.current_state = BROWSE;
+		}
 		printk("credito = %d                                                                                     \r",credit);
 		
         break;
     case BROWSE:
+
 			if(Vending_machine.last_event == BROWSE_UP){
-				up_down++;
-				if(up_down == 5){
-					up_down = 0;
+
+				if(flag_movie == 1){
 					printk("Name: %s , schedule: %s price: %d , available credit: %d           \r",movies[up_down].name,movies[up_down].time, movies[up_down].price ,credit);
+					flag_movie = 0;
 				}
 				else{
-					printk("Name: %s , schedule: %s price: %d , available credit: %d             \r",movies[up_down].name,movies[up_down].time, movies[up_down].price ,credit);
+					up_down++;
+					if(up_down == 5){
+						up_down = 0;
+						printk("Name: %s , schedule: %s price: %d , available credit: %d           \r",movies[up_down].name,movies[up_down].time, movies[up_down].price ,credit);
+					}
+					else{
+						printk("Name: %s , schedule: %s price: %d , available credit: %d             \r",movies[up_down].name,movies[up_down].time, movies[up_down].price ,credit);
+					}
 				}
 				Vending_machine.last_event = NO_EVENT;
 			}
 			if(Vending_machine.last_event == BROWSE_DOWN){
-				up_down--;
-				if(up_down == -1){
-					up_down = 4;
-					printk("Name: %s , schedule: %s price: %d , available credit: %d              \r",movies[up_down].name,movies[up_down].time, movies[up_down].price ,credit);
+				if(flag_movie == 1){
+					printk("Name: %s , schedule: %s price: %d , available credit: %d           \r",movies[up_down].name,movies[up_down].time, movies[up_down].price ,credit);
+					flag_movie = 0;
 				}
 				else{
-					printk("Name: %s , schedule: %s price: %d , available credit: %d                \r",movies[up_down].name,movies[up_down].time, movies[up_down].price ,credit);
+					up_down--;
+					if(up_down == -1){
+						up_down = 4;
+						printk("Name: %s , schedule: %s price: %d , available credit: %d           \r",movies[up_down].name,movies[up_down].time, movies[up_down].price ,credit);
+					}
+					else{
+						printk("Name: %s , schedule: %s price: %d , available credit: %d             \r",movies[up_down].name,movies[up_down].time, movies[up_down].price ,credit);
+					}
 				}
 				Vending_machine.last_event = NO_EVENT;
 			}
@@ -166,9 +183,9 @@ void sm_execute(){
 
 				}
 			}
-				else if(Vending_machine.last_event == COIN_1_EUR ||  Vending_machine.last_event == COIN_2_EUR || Vending_machine.last_event == COIN_5_EUR || Vending_machine.last_event == COIN_10_EUR){
+			else if(Vending_machine.last_event == COIN_1_EUR ||  Vending_machine.last_event == COIN_2_EUR || Vending_machine.last_event == COIN_5_EUR || Vending_machine.last_event == COIN_10_EUR){
 				Vending_machine.current_state = INSERT_COIN;
-				}
+			}
 
         break;
 
@@ -198,11 +215,23 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 {
 	int i=0;
 	int val;
+	int db;
+
 	/* Identify the button(s) that was(ere) hit*/
 	for(i=0; i<sizeof(buttons_pins); i++){		
 		if(BIT(buttons_pins[i]) & pins) {
-			//printk("Button %d pressed\n",i+1);
-			val = i+1;
+			printk("Button %d pressed\n",i+1);
+			k_msleep(1);
+			db = BIT(buttons_pins[i]) & pins;
+			if(db == 0){
+				val = -1;
+			}
+			else{
+				val = i+1;
+
+			}
+
+			
 			}
 		} // mudar é o evento desta desta função
 		 	switch(val){
@@ -237,7 +266,10 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 				case 8:
 					Vending_machine.last_event = RETURN;
 					break;   
-			
+
+				case -1:
+					printk("Bounce Detected \r\n");
+					break;
 	}
 
 }

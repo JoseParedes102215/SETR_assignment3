@@ -220,20 +220,10 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 	/* Identify the button(s) that was(ere) hit*/
 	for(i=0; i<sizeof(buttons_pins); i++){		
 		if(BIT(buttons_pins[i]) & pins) {
-			printk("Button %d pressed\n",i+1);
-			k_msleep(1);
-			db = BIT(buttons_pins[i]) & pins;
-			if(db == 0){
-				val = -1;
+			//printk("Button %d pressed\n",i+1);
+			val = i + 1;
 			}
-			else{
-				val = i+1;
-
-			}
-
-			
-			}
-		} // mudar é o evento desta desta função
+		} 
 		 	switch(val){
 				case 1:
 					Vending_machine.last_event = COIN_1_EUR;

@@ -1,4 +1,16 @@
 
+/**
+\author José Paredes Manuel Miranda
+\date 16 May 2023
+*/
+
+/** 
+\file vending_machine.c
+\brief Vending Machine State Machine
+ */
+
+
+
 #include <zephyr/kernel.h>          /* for k_msleep() */
 #include <zephyr/device.h>          /* for device_is_ready() and device structure */
 #include <zephyr/devicetree.h>		/* for DT_NODELABEL() */
@@ -7,18 +19,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* /* Use a "big" sleep time to reduce CPU load (button detection int activated, not polled) */
 #define SLEEP_TIME_MS   10 
 
+/**
+\brief Define a structure for a movie session.
+ */
 
- // define the structure of a movie session
 typedef struct  {
-  char name[20];
-  char time[10];
-  int price;
+  char name[20];/**< Name of the movie */
+  char time[10];/**< Time of the movie session */
+  int price;/**< Price of the movie session */
 } MovieSession ;
 
-// define the list of movie sessions
+/**
+\brief Define the list of movie sessions.
+ */
     MovieSession movies[5] = {
   {"Movie A", "19H00", 9},
   {"Movie A", "21H00", 11},
@@ -28,42 +43,63 @@ typedef struct  {
 };
 
 // define the current credit of the system
-int credit = 0;
-int up_down;
-int flag_movie = 0;
+int credit = 0;/**< Current credit of the system */
+int up_down;/**< Variable to navigate movie sessions */
+int flag_movie = 0;/**< Flag to indicate if movie browsing is active */
 
-// define the states of the state machine
+/**
+\brief Define the states of the state machine.
+
+
+ */
 typedef enum {
-  START,
-  INSERT_COIN,
-  BROWSE,
-  SELECT_MOVIE,
-  RETURN_CREDIT
+  START,            /**< Start state */
+  INSERT_COIN,      /**< Insert coin state */
+  BROWSE,           /**< Browse state */
+  SELECT_MOVIE,     /**< Select movie state */
+  RETURN_CREDIT     /**< Return credit state */
 } State;
 
-// define the events that can trigger state transitions
-typedef enum  {
-  NO_EVENT,
-  COIN_1_EUR,
-  COIN_2_EUR,
-  COIN_5_EUR,
-  COIN_10_EUR,
-  BROWSE_UP,
-  BROWSE_DOWN,
-  SELECT,
-  RETURN
+
+/**
+\brief Define the events that can trigger state transitions.
+
+
+ */
+typedef enum {
+  NO_EVENT,         /**< No event */
+  COIN_1_EUR,       /**< 1 EUR coin event */
+  COIN_2_EUR,       /**< 2 EUR coin event */
+  COIN_5_EUR,       /**< 5 EUR coin event */
+  COIN_10_EUR,      /**< 10 EUR coin event */
+  BROWSE_UP,        /**< Browse up event */
+  BROWSE_DOWN,      /**< Browse down event */
+  SELECT,           /**< Select event */
+  RETURN            /**< Return event */
 } Event;
 
 
-typedef struct {
-    State current_state;
-    State initial_state;
-    Event last_event;
 
-}State_Machine_info;
+/**
+\brief Define the structure for the state machine information.
+
+
+ */
+typedef struct {
+  State current_state; /**< Current state of the state machine */
+  State initial_state; /**< Initial state of the state machine */
+  Event last_event;    /**< Last event triggered */
+} State_Machine_info;
+
 
 State_Machine_info Vending_machine;
 
+
+/**
+\brief Initialize the state machine.
+
+
+ */
 void sm_init(){
     Vending_machine.current_state = START;
     Vending_machine.initial_state = START;
@@ -71,18 +107,45 @@ void sm_init(){
 
 }
 
+
+/**
+\brief Reset the state machine to its initial state.
+
+
+ */
 void sm_reset(){
     Vending_machine.initial_state = START;
 }
 
+
+/**
+\brief Get the current state of the state machine.
+
+
+\return The current state.
+ */
 State sm_get_current_state(){
     return Vending_machine.current_state;
 }
 
+
+
+/**
+\brief Send an event to the state machine.
+
+
+\param event The event to be sent.
+ */
 void sm_send_event(Event event){
     Vending_machine.last_event = event;
 }
 
+
+/**
+\brief Execute the state machine logic based on the current state and last event.
+
+
+ */
 void sm_execute(){
 
 
@@ -211,11 +274,16 @@ static const struct device * gpio0_dev = DEVICE_DT_GET(GPIO0_NODE);
 *  It defines e.g. which pin triggers the callback and the address of the function */
 static struct gpio_callback button_cb_data;
 
+/**
+\brief Callback function triggered when a button is pressed.
+\param dev The GPIO device.
+\param cb The GPIO callback structure.
+\param pins The bitmask of the pins triggered.
+ */
 void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
 	int i=0;
 	int val;
-	int db;
 
 	/* Identify the button(s) that was(ere) hit*/
 	for(i=0; i<sizeof(buttons_pins); i++){		
@@ -257,14 +325,16 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 					Vending_machine.last_event = RETURN;
 					break;   
 
-				case -1:
-					printk("Bounce Detected \r\n");
-					break;
+				default:
+				break;
 	}
 
 }
 
-
+/**
+\brief Main function of the vending machine program.
+\return The exit status.
+ */
 
 int main(){
 	
